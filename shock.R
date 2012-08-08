@@ -2,7 +2,21 @@
 library(TTR)
 # Calculate the shock using weekly and monthly vwap delta
 #
-shock.2 <- function(symbol, db) {
+shock <- function(symbol) {
+  df.shock <- data.frame(scrip=character, date=character, shock=numeric, stringsAsFactors=F)
+  colnames(df.shock) <- c("symbol", "date", "shock")
+  df.symbol <- subset(cnx500, scrip==symbol, drop=T)
+  dates <- unique(df.symbol$date)
+  for (d in dates) {
+    df.tmp <- df.symbol[df.symbol$date == d, ]
+    df.tmp$shock <- log(df.tmp$volume) * c(NA, diff(log(df.tmp$close)))
+    df.row   <- data.frame(scrip=symbol, date=d, shock=sum(df.tmp$shock, na.rm=T))
+    df.shock <- rbind(df.shock, df.row)
+  }
+  return (df.shock)
+}
+
+shock.legacy <- function(symbol, db) {
   query <- paste("select * from bhav where symbol = '", symbol, "' and series='EQ'", sep='')
   bhav <- dbGetQuery(db, query)
   bhav$date  <-  as.Date(bhav$date, format='%Y-%m-%d')
